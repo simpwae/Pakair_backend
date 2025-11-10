@@ -1,11 +1,16 @@
-import User from '../models/User.js';
-import jwt from 'jsonwebtoken';
+import User from "../models/User.js";
+import jwt from "jsonwebtoken";
 
 // Generate JWT Token
 const generateToken = (id) => {
-  return jwt.sign({ id }, process.env.JWT_SECRET || 'your-super-secret-jwt-key-change-this-in-production', {
-    expiresIn: process.env.JWT_EXPIRE || '7d',
-  });
+  return jwt.sign(
+    { id },
+    process.env.JWT_SECRET ||
+      "your-super-secret-jwt-key-change-this-in-production",
+    {
+      expiresIn: process.env.JWT_EXPIRE || "7d",
+    }
+  );
 };
 
 // @desc    Register new user
@@ -13,20 +18,21 @@ const generateToken = (id) => {
 // @access  Public
 export const register = async (req, res) => {
   try {
-    const { firstName, lastName, email, phone, password, agreeToTerms, role } = req.body;
+    const { firstName, lastName, email, phone, password, agreeToTerms, role } =
+      req.body;
 
     // Validation
     if (!firstName || !lastName || !email || !phone || !password) {
       return res.status(400).json({
         success: false,
-        message: 'Please provide all required fields',
+        message: "Please provide all required fields",
       });
     }
 
     if (!agreeToTerms) {
       return res.status(400).json({
         success: false,
-        message: 'You must agree to terms and conditions',
+        message: "You must agree to terms and conditions",
       });
     }
 
@@ -35,7 +41,7 @@ export const register = async (req, res) => {
     if (existingUser) {
       return res.status(400).json({
         success: false,
-        message: 'User already exists with this email',
+        message: "User already exists with this email",
       });
     }
 
@@ -47,7 +53,7 @@ export const register = async (req, res) => {
       phone,
       password,
       agreeToTerms,
-      role: role || 'citizen',
+      role: role || "citizen",
     });
 
     // Generate token
@@ -67,15 +73,15 @@ export const register = async (req, res) => {
 
     res.status(201).json({
       success: true,
-      message: 'User registered successfully',
+      message: "User registered successfully",
       token,
       user: userResponse,
     });
   } catch (error) {
-    console.error('Registration error:', error);
+    console.error("Registration error:", error);
     res.status(500).json({
       success: false,
-      message: 'Server error during registration',
+      message: "Server error during registration",
       error: error.message,
     });
   }
@@ -92,17 +98,19 @@ export const login = async (req, res) => {
     if (!email || !password) {
       return res.status(400).json({
         success: false,
-        message: 'Please provide email and password',
+        message: "Please provide email and password",
       });
     }
 
     // Find user and include password for comparison
-    const user = await User.findOne({ email: email.toLowerCase() }).select('+password');
+    const user = await User.findOne({ email: email.toLowerCase() }).select(
+      "+password"
+    );
 
     if (!user) {
       return res.status(401).json({
         success: false,
-        message: 'Invalid email or password',
+        message: "Invalid email or password",
       });
     }
 
@@ -110,7 +118,7 @@ export const login = async (req, res) => {
     if (!user.isActive) {
       return res.status(401).json({
         success: false,
-        message: 'Your account has been deactivated. Please contact support.',
+        message: "Your account has been deactivated. Please contact support.",
       });
     }
 
@@ -119,7 +127,7 @@ export const login = async (req, res) => {
     if (!isPasswordMatch) {
       return res.status(401).json({
         success: false,
-        message: 'Invalid email or password',
+        message: "Invalid email or password",
       });
     }
 
@@ -144,15 +152,15 @@ export const login = async (req, res) => {
 
     res.status(200).json({
       success: true,
-      message: 'Login successful',
+      message: "Login successful",
       token,
       user: userResponse,
     });
   } catch (error) {
-    console.error('Login error:', error);
+    console.error("Login error:", error);
     res.status(500).json({
       success: false,
-      message: 'Server error during login',
+      message: "Server error during login",
       error: error.message,
     });
   }
@@ -168,7 +176,7 @@ export const getMe = async (req, res) => {
     if (!user) {
       return res.status(404).json({
         success: false,
-        message: 'User not found',
+        message: "User not found",
       });
     }
 
@@ -190,12 +198,11 @@ export const getMe = async (req, res) => {
       user: userResponse,
     });
   } catch (error) {
-    console.error('Get me error:', error);
+    console.error("Get me error:", error);
     res.status(500).json({
       success: false,
-      message: 'Server error',
+      message: "Server error",
       error: error.message,
     });
   }
 };
-

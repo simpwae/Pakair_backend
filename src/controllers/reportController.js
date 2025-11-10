@@ -6,13 +6,47 @@ import { uploadToCloudinary } from '../config/cloudinary.js';
 // @access  Private (Citizen)
 export const createReport = async (req, res) => {
   try {
-    const { description, title, useCurrentLocation, address, latitude, longitude, city, province } = req.body;
+    // Extract fields from req.body (multer makes them available here)
+    // Handle both string and boolean values for useCurrentLocation
+    const description = req.body.description || '';
+    const title = req.body.title || '';
+    const useCurrentLocation = req.body.useCurrentLocation === 'true' || req.body.useCurrentLocation === true || req.body.useCurrentLocation === '1';
+    const address = req.body.address || '';
+    const latitude = req.body.latitude ? parseFloat(req.body.latitude) : null;
+    const longitude = req.body.longitude ? parseFloat(req.body.longitude) : null;
+    const city = req.body.city || '';
+    const province = req.body.province || '';
+
+    // Debug logging (remove in production if needed)
+    console.log('Report submission - File:', req.file ? 'Present' : 'Missing');
+    console.log('Report submission - Body fields:', {
+      hasDescription: !!description,
+      hasTitle: !!title,
+      useCurrentLocation,
+      hasAddress: !!address,
+      hasCoordinates: !!(latitude && longitude),
+    });
 
     // Check if file was uploaded
     if (!req.file) {
       return res.status(400).json({
         success: false,
         message: 'Please upload an image or video',
+      });
+    }
+
+    // Validate location data
+    if (useCurrentLocation && (!latitude || !longitude || isNaN(latitude) || isNaN(longitude))) {
+      return res.status(400).json({
+        success: false,
+        message: 'Current location coordinates are required when using current location',
+      });
+    }
+
+    if (!useCurrentLocation && !address && (!latitude || !longitude || isNaN(latitude) || isNaN(longitude))) {
+      return res.status(400).json({
+        success: false,
+        message: 'Please provide either an address or valid coordinates',
       });
     }
 
@@ -36,16 +70,16 @@ export const createReport = async (req, res) => {
     // Determine media type
     const mediaType = req.file.mimetype.startsWith('video/') ? 'video' : 'image';
 
-    // Prepare location data
+    // Prepare location data with validated coordinates
     const locationData = {
-      useCurrentLocation: useCurrentLocation === 'true' || useCurrentLocation === true,
-      address: address || '',
+      useCurrentLocation: useCurrentLocation,
+      address: address,
       coordinates: {
-        latitude: parseFloat(latitude) || 0,
-        longitude: parseFloat(longitude) || 0,
+        latitude: latitude || 0,
+        longitude: longitude || 0,
       },
-      city: city || '',
-      province: province || '',
+      city: city,
+      province: province,
     };
 
     // Create report
