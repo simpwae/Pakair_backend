@@ -5,6 +5,7 @@ import authRoutes from "../src/routes/authRoutes.js";
 import reportRoutes from "../src/routes/reportRoutes.js";
 import modelDataRoutes from "../src/routes/modelDataRoutes.js";
 import recommendationRoutes from "../src/routes/recommendationRoutes.js";
+import featureRoutes from "../src/routes/featureRoutes.js";
 import seedDefaultOfficial from "../src/utils/seedDefaultOfficial.js";
 
 dotenv.config();
@@ -62,17 +63,78 @@ app.get("/debug", (req, res) => {
   });
 });
 
+// Test route to verify API is working
+app.get("/api/test", (req, res) => {
+  res.json({ message: "API is working!", timestamp: new Date().toISOString() });
+});
+
 // API Routes - REGISTER THESE FIRST
-app.use("/api/auth", authRoutes);
-app.use("/api/reports", reportRoutes);
-app.use("/api/model-data", modelDataRoutes);
-app.use("/api/recommendations", recommendationRoutes);
+console.log("📝 Registering API routes...");
+try {
+  app.use("/api/auth", authRoutes);
+  console.log("✅ Auth routes registered");
+} catch (error) {
+  console.error("❌ Auth routes failed:", error);
+}
+
+try {
+  app.use("/api/reports", reportRoutes);
+  console.log("✅ Report routes registered");
+} catch (error) {
+  console.error("❌ Report routes failed:", error);
+}
+
+try {
+  app.use("/api/model-data", modelDataRoutes);
+  console.log("✅ Model data routes registered");
+} catch (error) {
+  console.error("❌ Model data routes failed:", error);
+}
+
+try {
+  app.use("/api/recommendations", recommendationRoutes);
+  console.log("✅ Recommendation routes registered");
+} catch (error) {
+  console.error("❌ Recommendation routes failed:", error);
+}
+
+try {
+  app.use("/api/features", featureRoutes);
+  console.log("✅ Feature routes registered");
+} catch (error) {
+  console.error("❌ Feature routes failed:", error);
+}
+
+// List all registered routes for debugging
+app.get("/api/routes", (req, res) => {
+  const routes = [];
+  app._router.stack.forEach((middleware) => {
+    if (middleware.route) {
+      routes.push({
+        path: middleware.route.path,
+        methods: Object.keys(middleware.route.methods),
+      });
+    } else if (middleware.name === "router") {
+      middleware.handle.stack.forEach((handler) => {
+        if (handler.route) {
+          routes.push({
+            path: handler.route.path,
+            methods: Object.keys(handler.route.methods),
+          });
+        }
+      });
+    }
+  });
+  res.json({ routes, totalRoutes: routes.length });
+});
 
 // 404 handler - LAST
 app.use((req, res) => {
-  res
-    .status(404)
-    .json({ success: false, message: "Route not found: " + req.url });
+  res.status(404).json({
+    success: false,
+    message: "Route not found: " + req.method + " " + req.url,
+    availableRoutes: "Visit /api/routes to see all registered routes",
+  });
 });
 
 // Initialize DB on cold start
