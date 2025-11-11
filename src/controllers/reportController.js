@@ -1,5 +1,5 @@
-import CitizenReport from '../models/CitizenReport.js';
-import { uploadToCloudinary } from '../config/cloudinary.js';
+import CitizenReport from "../models/CitizenReport.js";
+import { uploadToCloudinary } from "../config/cloudinary.js";
 
 // @desc    Create new report
 // @route   POST /api/reports
@@ -8,18 +8,23 @@ export const createReport = async (req, res) => {
   try {
     // Extract fields from req.body (multer makes them available here)
     // Handle both string and boolean values for useCurrentLocation
-    const description = req.body.description || '';
-    const title = req.body.title || '';
-    const useCurrentLocation = req.body.useCurrentLocation === 'true' || req.body.useCurrentLocation === true || req.body.useCurrentLocation === '1';
-    const address = req.body.address || '';
+    const description = req.body.description || "";
+    const title = req.body.title || "";
+    const useCurrentLocation =
+      req.body.useCurrentLocation === "true" ||
+      req.body.useCurrentLocation === true ||
+      req.body.useCurrentLocation === "1";
+    const address = req.body.address || "";
     const latitude = req.body.latitude ? parseFloat(req.body.latitude) : null;
-    const longitude = req.body.longitude ? parseFloat(req.body.longitude) : null;
-    const city = req.body.city || '';
-    const province = req.body.province || '';
+    const longitude = req.body.longitude
+      ? parseFloat(req.body.longitude)
+      : null;
+    const city = req.body.city || "";
+    const province = req.body.province || "";
 
     // Debug logging (remove in production if needed)
-    console.log('Report submission - File:', req.file ? 'Present' : 'Missing');
-    console.log('Report submission - Body fields:', {
+    console.log("Report submission - File:", req.file ? "Present" : "Missing");
+    console.log("Report submission - Body fields:", {
       hasDescription: !!description,
       hasTitle: !!title,
       useCurrentLocation,
@@ -31,22 +36,30 @@ export const createReport = async (req, res) => {
     if (!req.file) {
       return res.status(400).json({
         success: false,
-        message: 'Please upload an image or video',
+        message: "Please upload an image or video",
       });
     }
 
     // Validate location data
-    if (useCurrentLocation && (!latitude || !longitude || isNaN(latitude) || isNaN(longitude))) {
+    if (
+      useCurrentLocation &&
+      (!latitude || !longitude || isNaN(latitude) || isNaN(longitude))
+    ) {
       return res.status(400).json({
         success: false,
-        message: 'Current location coordinates are required when using current location',
+        message:
+          "Current location coordinates are required when using current location",
       });
     }
 
-    if (!useCurrentLocation && !address && (!latitude || !longitude || isNaN(latitude) || isNaN(longitude))) {
+    if (
+      !useCurrentLocation &&
+      !address &&
+      (!latitude || !longitude || isNaN(latitude) || isNaN(longitude))
+    ) {
       return res.status(400).json({
         success: false,
-        message: 'Please provide either an address or valid coordinates',
+        message: "Please provide either an address or valid coordinates",
       });
     }
 
@@ -55,20 +68,22 @@ export const createReport = async (req, res) => {
     try {
       cloudinaryResult = await uploadToCloudinary(
         req.file.buffer,
-        'pakair/reports',
+        "pakair/reports",
         req.file.mimetype
       );
     } catch (uploadError) {
-      console.error('Cloudinary upload error:', uploadError);
+      console.error("Cloudinary upload error:", uploadError);
       return res.status(500).json({
         success: false,
-        message: 'Failed to upload media file',
+        message: "Failed to upload media file",
         error: uploadError.message,
       });
     }
 
     // Determine media type
-    const mediaType = req.file.mimetype.startsWith('video/') ? 'video' : 'image';
+    const mediaType = req.file.mimetype.startsWith("video/")
+      ? "video"
+      : "image";
 
     // Prepare location data with validated coordinates
     const locationData = {
@@ -93,25 +108,25 @@ export const createReport = async (req, res) => {
         mimeType: req.file.mimetype,
       },
       location: locationData,
-      description: description || '',
-      title: title || '',
-      status: 'pending',
+      description: description || "",
+      title: title || "",
+      status: "pending",
       verified: false,
     });
 
     // Populate user data
-    await report.populate('userId', 'firstName lastName email');
+    await report.populate("userId", "firstName lastName email");
 
     res.status(201).json({
       success: true,
-      message: 'Report submitted successfully',
+      message: "Report submitted successfully",
       data: report,
     });
   } catch (error) {
-    console.error('Create report error:', error);
+    console.error("Create report error:", error);
     res.status(500).json({
       success: false,
-      message: 'Server error while creating report',
+      message: "Server error while creating report",
       error: error.message,
     });
   }
@@ -132,7 +147,7 @@ export const getReports = async (req, res) => {
     }
 
     if (verified !== undefined) {
-      query.verified = verified === 'true';
+      query.verified = verified === "true";
     }
 
     // Pagination
@@ -142,8 +157,8 @@ export const getReports = async (req, res) => {
 
     // Get reports
     const reports = await CitizenReport.find(query)
-      .populate('userId', 'firstName lastName email')
-      .populate('verifiedBy', 'firstName lastName email')
+      .populate("userId", "firstName lastName email")
+      .populate("verifiedBy", "firstName lastName email")
       .sort({ createdAt: -1 })
       .skip(skip)
       .limit(limitNum);
@@ -162,10 +177,10 @@ export const getReports = async (req, res) => {
       },
     });
   } catch (error) {
-    console.error('Get reports error:', error);
+    console.error("Get reports error:", error);
     res.status(500).json({
       success: false,
-      message: 'Server error while fetching reports',
+      message: "Server error while fetching reports",
       error: error.message,
     });
   }
@@ -179,20 +194,20 @@ export const getReport = async (req, res) => {
     const { id } = req.params;
 
     const report = await CitizenReport.findById(id)
-      .populate('userId', 'firstName lastName email')
-      .populate('verifiedBy', 'firstName lastName email');
+      .populate("userId", "firstName lastName email")
+      .populate("verifiedBy", "firstName lastName email");
 
     if (!report) {
       return res.status(404).json({
         success: false,
-        message: 'Report not found',
+        message: "Report not found",
       });
     }
 
     if (report.isDeleted) {
       return res.status(404).json({
         success: false,
-        message: 'Report not found',
+        message: "Report not found",
       });
     }
 
@@ -201,10 +216,10 @@ export const getReport = async (req, res) => {
       data: report,
     });
   } catch (error) {
-    console.error('Get report error:', error);
+    console.error("Get report error:", error);
     res.status(500).json({
       success: false,
-      message: 'Server error while fetching report',
+      message: "Server error while fetching report",
       error: error.message,
     });
   }
@@ -223,14 +238,14 @@ export const verifyReport = async (req, res) => {
     if (!report) {
       return res.status(404).json({
         success: false,
-        message: 'Report not found',
+        message: "Report not found",
       });
     }
 
     if (report.isDeleted) {
       return res.status(404).json({
         success: false,
-        message: 'Report not found',
+        message: "Report not found",
       });
     }
 
@@ -238,7 +253,7 @@ export const verifyReport = async (req, res) => {
     report.verified = true;
     report.verifiedBy = req.user.id;
     report.verifiedAt = new Date();
-    report.status = 'verified';
+    report.status = "verified";
     if (verificationNotes) {
       report.verificationNotes = verificationNotes;
     }
@@ -246,19 +261,19 @@ export const verifyReport = async (req, res) => {
     await report.save();
 
     // Populate user data
-    await report.populate('userId', 'firstName lastName email');
-    await report.populate('verifiedBy', 'firstName lastName email');
+    await report.populate("userId", "firstName lastName email");
+    await report.populate("verifiedBy", "firstName lastName email");
 
     res.status(200).json({
       success: true,
-      message: 'Report verified successfully',
+      message: "Report verified successfully",
       data: report,
     });
   } catch (error) {
-    console.error('Verify report error:', error);
+    console.error("Verify report error:", error);
     res.status(500).json({
       success: false,
-      message: 'Server error while verifying report',
+      message: "Server error while verifying report",
       error: error.message,
     });
   }
@@ -277,14 +292,14 @@ export const rejectReport = async (req, res) => {
     if (!report) {
       return res.status(404).json({
         success: false,
-        message: 'Report not found',
+        message: "Report not found",
       });
     }
 
     if (report.isDeleted) {
       return res.status(404).json({
         success: false,
-        message: 'Report not found',
+        message: "Report not found",
       });
     }
 
@@ -292,7 +307,7 @@ export const rejectReport = async (req, res) => {
     report.verified = false;
     report.verifiedBy = req.user.id;
     report.verifiedAt = new Date();
-    report.status = 'rejected';
+    report.status = "rejected";
     if (verificationNotes) {
       report.verificationNotes = verificationNotes;
     }
@@ -300,21 +315,64 @@ export const rejectReport = async (req, res) => {
     await report.save();
 
     // Populate user data
-    await report.populate('userId', 'firstName lastName email');
-    await report.populate('verifiedBy', 'firstName lastName email');
+    await report.populate("userId", "firstName lastName email");
+    await report.populate("verifiedBy", "firstName lastName email");
 
     res.status(200).json({
       success: true,
-      message: 'Report rejected',
+      message: "Report rejected",
       data: report,
     });
   } catch (error) {
-    console.error('Reject report error:', error);
+    console.error("Reject report error:", error);
     res.status(500).json({
       success: false,
-      message: 'Server error while rejecting report',
+      message: "Server error while rejecting report",
       error: error.message,
     });
   }
 };
 
+// @desc    Delete report (Official only)
+// @route   DELETE /api/reports/:id
+// @access  Private (Official)
+export const deleteReport = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    const report = await CitizenReport.findById(id);
+
+    if (!report) {
+      return res.status(404).json({
+        success: false,
+        message: "Report not found",
+      });
+    }
+
+    if (report.isDeleted) {
+      return res.status(404).json({
+        success: false,
+        message: "Report already deleted",
+      });
+    }
+
+    // Soft delete - mark as deleted instead of actually removing
+    report.isDeleted = true;
+    report.deletedAt = new Date();
+    report.deletedBy = req.user.id;
+
+    await report.save();
+
+    res.status(200).json({
+      success: true,
+      message: "Report deleted successfully",
+    });
+  } catch (error) {
+    console.error("Delete report error:", error);
+    res.status(500).json({
+      success: false,
+      message: "Server error while deleting report",
+      error: error.message,
+    });
+  }
+};

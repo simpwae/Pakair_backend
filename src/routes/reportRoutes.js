@@ -1,13 +1,21 @@
-import express from 'express';
+import express from "express";
 import {
   createReport,
   getReports,
   getReport,
   verifyReport,
   rejectReport,
-} from '../controllers/reportController.js';
-import { authenticate, isOfficial, isCitizen } from '../middlewares/authMiddleware.js';
-import { uploadSingle, handleUploadError } from '../middlewares/uploadMiddleware.js';
+  deleteReport,
+} from "../controllers/reportController.js";
+import {
+  authenticate,
+  isOfficial,
+  isCitizen,
+} from "../middlewares/authMiddleware.js";
+import {
+  uploadSingle,
+  handleUploadError,
+} from "../middlewares/uploadMiddleware.js";
 
 const router = express.Router();
 
@@ -15,25 +23,21 @@ const router = express.Router();
 router.use(authenticate);
 
 // Get all reports (both citizens and officials can view)
-router.get('/', getReports);
+router.get("/", getReports);
 
 // Get single report
-router.get('/:id', getReport);
+router.get("/:id", getReport);
 
 // Create report (citizens only)
-router.post(
-  '/',
-  isCitizen,
-  uploadSingle,
-  handleUploadError,
-  createReport
-);
+router.post("/", isCitizen, uploadSingle, handleUploadError, createReport);
 
 // Verify report (officials only)
-router.patch('/:id/verify', isOfficial, verifyReport);
+router.patch("/:id/verify", isOfficial, verifyReport);
 
 // Reject report (officials only)
-router.patch('/:id/reject', isOfficial, rejectReport);
+router.patch("/:id/reject", isOfficial, rejectReport);
+
+// Delete report (officials only)
+router.delete("/:id", isOfficial, deleteReport);
 
 export default router;
-

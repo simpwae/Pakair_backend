@@ -4,6 +4,8 @@ import cors from "cors";
 import connectDB from "./src/config/database.js";
 import authRoutes from "./src/routes/authRoutes.js";
 import reportRoutes from "./src/routes/reportRoutes.js";
+import modelDataRoutes from "./src/routes/modelDataRoutes.js";
+import recommendationRoutes from "./src/routes/recommendationRoutes.js";
 import seedDefaultOfficial from "./src/utils/seedDefaultOfficial.js";
 
 dotenv.config();
@@ -24,13 +26,20 @@ if (isDev) {
 } else {
   // Production: allow only configured origins
   const allowedOrigins = (process.env.CORS_ORIGIN &&
-    process.env.CORS_ORIGIN.split(",")) || ["https://your-frontend-domain.com"];
+    process.env.CORS_ORIGIN.split(",")) || [
+    "https://pak-air-sehat-awaz.vercel.app",
+    "https://pakair-dashboard.vercel.app",
+  ];
 
   app.use(
     cors({
       origin: function (origin, callback) {
         if (!origin) return callback(null, true);
-        if (allowedOrigins.indexOf(origin) !== -1) {
+        // Check if origin matches any allowed origin
+        const isAllowed = allowedOrigins.some(
+          (allowed) => origin === allowed || origin.endsWith(".vercel.app")
+        );
+        if (isAllowed) {
           return callback(null, true);
         }
         return callback(
@@ -66,6 +75,8 @@ app.get("/health", (req, res) => {
 // API Routes
 app.use("/api/auth", authRoutes);
 app.use("/api/reports", reportRoutes);
+app.use("/api/model-data", modelDataRoutes);
+app.use("/api/recommendations", recommendationRoutes);
 
 // Error handling middleware
 app.use((err, req, res, next) => {
