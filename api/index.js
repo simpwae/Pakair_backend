@@ -5,7 +5,6 @@ import authRoutes from "../src/routes/authRoutes.js";
 import reportRoutes from "../src/routes/reportRoutes.js";
 import modelDataRoutes from "../src/routes/modelDataRoutes.js";
 import recommendationRoutes from "../src/routes/recommendationRoutes.js";
-import featureRoutes from "../src/routes/featureRoutes.js";
 import seedDefaultOfficial from "../src/utils/seedDefaultOfficial.js";
 
 dotenv.config();
@@ -96,13 +95,6 @@ try {
   console.log("✅ Recommendation routes registered");
 } catch (error) {
   console.error("❌ Recommendation routes failed:", error);
-}
-
-try {
-  app.use("/api/features", featureRoutes);
-  console.log("✅ Feature routes registered");
-} catch (error) {
-  console.error("❌ Feature routes failed:", error);
 }
 
 // List all registered routes for debugging
