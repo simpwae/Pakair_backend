@@ -13,43 +13,52 @@ dotenv.config();
 const app = express();
 const port = process.env.PORT || 3000;
 
-// CORS Middleware
-// In development allow all origins (helps when frontend runs on LAN IPs or different ports).
+// CORS Middleware - Allow all Vercel deployments
 const isDev = process.env.NODE_ENV !== "production";
-if (isDev) {
-  app.use(
-    cors({
-      origin: true,
-      credentials: true,
-    })
-  );
-} else {
-  // Production: allow only configured origins
-  const allowedOrigins = (process.env.CORS_ORIGIN &&
-    process.env.CORS_ORIGIN.split(",")) || [
-    "https://pak-air-sehat-awaz.vercel.app",
-    "https://pakair-dashboard.vercel.app",
-  ];
+console.log(`🌍 Environment: ${isDev ? "Development" : "Production"}`);
 
-  app.use(
-    cors({
-      origin: function (origin, callback) {
-        if (!origin) return callback(null, true);
-        // Check if origin matches any allowed origin
-        const isAllowed = allowedOrigins.some(
-          (allowed) => origin === allowed || origin.endsWith(".vercel.app")
-        );
-        if (isAllowed) {
-          return callback(null, true);
-        }
-        return callback(
-          new Error("CORS policy: This origin is not allowed - " + origin)
-        );
-      },
-      credentials: true,
-    })
-  );
-}
+app.use(
+  cors({
+    origin: function (origin, callback) {
+      console.log(
+        `📡 Request from origin: ${origin || "no origin (direct/Postman)"}`
+      );
+
+      // Allow requests with no origin (mobile apps, Postman, curl)
+      if (!origin) {
+        console.log("✅ Allowing request with no origin");
+        return callback(null, true);
+      }
+
+      // In development, allow all
+      if (isDev) {
+        console.log("✅ Development mode - allowing all origins");
+        return callback(null, true);
+      }
+
+      // In production, allow all Vercel apps and configured origins
+      const allowedOrigins = process.env.CORS_ORIGIN
+        ? process.env.CORS_ORIGIN.split(",").map((o) => o.trim())
+        : [];
+
+      const isVercelApp = origin.includes(".vercel.app");
+      const isAllowedOrigin = allowedOrigins.some((allowed) =>
+        origin.includes(allowed.replace("https://", "").replace("http://", ""))
+      );
+
+      if (isVercelApp || isAllowedOrigin) {
+        console.log("✅ Allowing origin:", origin);
+        return callback(null, true);
+      }
+
+      console.log("❌ Blocking origin:", origin);
+      return callback(new Error("CORS policy: Origin not allowed - " + origin));
+    },
+    credentials: true,
+    methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+    allowedHeaders: ["Content-Type", "Authorization", "X-Requested-With"],
+  })
+);
 
 // Body parsing middleware
 app.use(express.json());
@@ -68,6 +77,17 @@ app.get("/", (req, res) => {
 app.get("/health", (req, res) => {
   res.json({
     status: "OK",
+    timestamp: new Date().toISOString(),
+  });
+});
+
+// Debug route to check CORS and environment
+app.get("/debug", (req, res) => {
+  res.json({
+    environment: process.env.NODE_ENV || "development",
+    corsOrigin: process.env.CORS_ORIGIN || "not set",
+    requestOrigin: req.headers.origin || "no origin header",
+    requestHeaders: req.headers,
     timestamp: new Date().toISOString(),
   });
 });
