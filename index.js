@@ -71,11 +71,24 @@ app.get("/debug", (req, res) => {
   });
 });
 
+// Log all requests for debugging
+app.use((req, res, next) => {
+  console.log(
+    `📨 ${req.method} ${req.url} - Origin: ${req.headers.origin || "none"}`
+  );
+  next();
+});
+
 // API Routes
+console.log("🔧 Registering routes...");
 app.use("/api/auth", authRoutes);
+console.log("✅ Auth routes registered");
 app.use("/api/reports", reportRoutes);
+console.log("✅ Report routes registered");
 app.use("/api/model-data", modelDataRoutes);
+console.log("✅ Model data routes registered");
 app.use("/api/recommendations", recommendationRoutes);
+console.log("✅ Recommendation routes registered");
 
 // Error handling middleware
 app.use((err, req, res, next) => {
