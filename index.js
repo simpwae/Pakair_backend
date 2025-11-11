@@ -79,16 +79,64 @@ app.use((req, res, next) => {
   next();
 });
 
+// Test route to verify API is working
+app.get("/api/test", (req, res) => {
+  res.json({ message: "API is working!", timestamp: new Date().toISOString() });
+});
+
 // API Routes
 console.log("🔧 Registering routes...");
-app.use("/api/auth", authRoutes);
-console.log("✅ Auth routes registered");
-app.use("/api/reports", reportRoutes);
-console.log("✅ Report routes registered");
-app.use("/api/model-data", modelDataRoutes);
-console.log("✅ Model data routes registered");
-app.use("/api/recommendations", recommendationRoutes);
-console.log("✅ Recommendation routes registered");
+
+try {
+  app.use("/api/auth", authRoutes);
+  console.log("✅ Auth routes registered");
+} catch (error) {
+  console.error("❌ Auth routes failed:", error);
+}
+
+try {
+  app.use("/api/reports", reportRoutes);
+  console.log("✅ Report routes registered");
+} catch (error) {
+  console.error("❌ Report routes failed:", error);
+}
+
+try {
+  app.use("/api/model-data", modelDataRoutes);
+  console.log("✅ Model data routes registered");
+} catch (error) {
+  console.error("❌ Model data routes failed:", error);
+}
+
+try {
+  app.use("/api/recommendations", recommendationRoutes);
+  console.log("✅ Recommendation routes registered");
+} catch (error) {
+  console.error("❌ Recommendation routes failed:", error);
+}
+
+// List all registered routes for debugging
+app.get("/api/routes", (req, res) => {
+  const routes = [];
+  app._router.stack.forEach((middleware) => {
+    if (middleware.route) {
+      routes.push({
+        path: middleware.route.path,
+        methods: Object.keys(middleware.route.methods),
+      });
+    } else if (middleware.name === "router") {
+      middleware.handle.stack.forEach((handler) => {
+        if (handler.route) {
+          routes.push({
+            path: handler.route.path,
+            methods: Object.keys(handler.route.methods),
+          });
+        }
+      });
+    }
+  });
+  res.json({ routes, totalRoutes: routes.length });
+});
 
 // Error handling middleware
 app.use((err, req, res, next) => {
