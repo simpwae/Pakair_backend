@@ -92,6 +92,11 @@ app.get("/debug", (req, res) => {
   });
 });
 
+// Handle preflight OPTIONS requests for all routes
+app.options("*", (req, res) => {
+  res.status(200).end();
+});
+
 // API Routes
 app.use("/api/auth", authRoutes);
 app.use("/api/reports", reportRoutes);
