@@ -95,18 +95,39 @@ app.use((req, res) => {
   });
 });
 
-const startServer = async () => {
+// Initialize database connection and seed data
+const initializeApp = async () => {
   try {
+    console.log("🚀 Initializing application...");
     await connectDB();
+    console.log("✅ Database connected");
     await seedDefaultOfficial();
-
-    app.listen(port, () => {
-      console.log(`Server is running on port ${port}`);
-    });
+    console.log("✅ Default official seeded");
   } catch (error) {
-    console.error("Failed to start server:", error.message);
-    process.exit(1);
+    console.error("❌ Initialization error:", error.message);
   }
 };
 
-startServer();
+// For Vercel serverless deployment
+if (process.env.VERCEL) {
+  console.log("🔷 Running on Vercel (serverless)");
+  initializeApp();
+} else {
+  // For local development
+  const startServer = async () => {
+    try {
+      await initializeApp();
+      app.listen(port, () => {
+        console.log(`🚀 Server is running on port ${port}`);
+        console.log(`📍 http://localhost:${port}`);
+      });
+    } catch (error) {
+      console.error("Failed to start server:", error.message);
+      process.exit(1);
+    }
+  };
+  startServer();
+}
+
+// Export for Vercel serverless functions
+export default app;
