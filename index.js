@@ -13,52 +13,25 @@ dotenv.config();
 const app = express();
 const port = process.env.PORT || 3000;
 
-// CORS Middleware - Allow all Vercel deployments
-const isDev = process.env.NODE_ENV !== "production";
-console.log(`🌍 Environment: ${isDev ? "Development" : "Production"}`);
-
-app.use(
-  cors({
-    origin: function (origin, callback) {
-      console.log(
-        `📡 Request from origin: ${origin || "no origin (direct/Postman)"}`
-      );
-
-      // Allow requests with no origin (mobile apps, Postman, curl)
-      if (!origin) {
-        console.log("✅ Allowing request with no origin");
-        return callback(null, true);
-      }
-
-      // In development, allow all
-      if (isDev) {
-        console.log("✅ Development mode - allowing all origins");
-        return callback(null, true);
-      }
-
-      // In production, allow all Vercel apps and configured origins
-      const allowedOrigins = process.env.CORS_ORIGIN
-        ? process.env.CORS_ORIGIN.split(",").map((o) => o.trim())
-        : [];
-
-      const isVercelApp = origin.includes(".vercel.app");
-      const isAllowedOrigin = allowedOrigins.some((allowed) =>
-        origin.includes(allowed.replace("https://", "").replace("http://", ""))
-      );
-
-      if (isVercelApp || isAllowedOrigin) {
-        console.log("✅ Allowing origin:", origin);
-        return callback(null, true);
-      }
-
-      console.log("❌ Blocking origin:", origin);
-      return callback(new Error("CORS policy: Origin not allowed - " + origin));
-    },
-    credentials: true,
-    methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
-    allowedHeaders: ["Content-Type", "Authorization", "X-Requested-With"],
-  })
-);
+// NUCLEAR CORS FIX - Allow everything (production safe)
+app.use((req, res, next) => {
+  const origin = req.headers.origin;
+  if (origin) {
+    res.setHeader('Access-Control-Allow-Origin', origin);
+  } else {
+    res.setHeader('Access-Control-Allow-Origin', '*');
+  }
+  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, PATCH, DELETE, OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With, Accept, Origin');
+  res.setHeader('Access-Control-Allow-Credentials', 'true');
+  res.setHeader('Access-Control-Max-Age', '86400'); // 24 hours
+  
+  // Handle preflight
+  if (req.method === 'OPTIONS') {
+    return res.status(200).end();
+  }
+  next();
+});
 
 // Body parsing middleware
 app.use(express.json());
@@ -90,11 +63,6 @@ app.get("/debug", (req, res) => {
     requestHeaders: req.headers,
     timestamp: new Date().toISOString(),
   });
-});
-
-// Handle preflight OPTIONS requests for all routes
-app.options("*", (req, res) => {
-  res.status(200).end();
 });
 
 // API Routes
